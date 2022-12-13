@@ -21,34 +21,18 @@ class PdfController extends AbstractController
         $this->em = $em;
     }
 
-    #[Route('/parse_pdf_solution_one', name: 'app_pdf_one', methods:['POST'])]
-    public function one(Request $request)
-    {
-        $config = new \Smalot\PdfParser\Config();
-        $config->setHorizontalOffset('');
-        // $file = $request->files->get('pdf');
-
-        $parser = new Parser([],$config);
-
-        $pdf = $parser->parseFile('documents/TRANSACTIONS-TPE-02-12-2022-APAYM-TPE-MID-2020000330.pdf');
-
-        $text = $pdf->getText();
-        var_dump($text);
-        die();
-        
-        return  $this->json($text);
-    }
-
-
-    #[Route('/parse_pdf_solution_two', name: 'app_pdf', methods:['POST'])]
+    #[Route('/parse_pdf', name: 'app_pdf', methods:['POST'])]
     public function two(Request $request)
     {
         $config = new \Smalot\PdfParser\Config();
         $config->setHorizontalOffset('t');
 
         $parser = new Parser([],$config);
+
+        $file = $request->files->get('pdf');
         
-        $pdf = $parser->parseFile('documents/TRANSACTIONS-TPE-02-12-2022-APAYM-TPE-MID-2020000330.pdf');
+        $pdf = $parser->parseFile($file);
+        // $pdf = $parser->parseFile('documents/TRANSACTIONS-TPE-02-12-2022-APAYM-TPE-MID-2020000330.pdf');
         $text = $pdf->getText();
 
         $x = str_replace("\nTransaction\n", "[TRANSACTION]", $text);
@@ -88,10 +72,10 @@ class PdfController extends AbstractController
                 $transaction->setTypeCarte($row[3]);
                 $transaction->setCodeAuth($row[4]);
                 $transaction->setMontantTransaction($row[5]);
-                $transaction->setTypeTransaction($row[5]);
+                $transaction->setTypeTransaction($row[6]);
     
-                $this->em->persist($transaction);
-                $this->em->flush();
+                // $this->em->persist($transaction);
+                // $this->em->flush();
     
                 $list->add($transaction);
             }

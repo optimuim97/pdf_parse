@@ -25,15 +25,82 @@ class PdfController extends AbstractController
     public function two(Request $request)
     {
         $config = new \Smalot\PdfParser\Config();
-        $config->setHorizontalOffset('t');
+        $config->setHorizontalOffset('\t');
+        $information_array = null;
+
+        $untreated_rows = [];
+        $list_transaction = new ArrayCollection();
 
         $parser = new Parser([],$config);
 
         $file = $request->files->get('pdf');
-        
         $pdf = $parser->parseFile($file);
-        // $pdf = $parser->parseFile('documents/TRANSACTIONS-TPE-02-12-2022-APAYM-TPE-MID-2020000330.pdf');
+
+        $pdfDetails = $pdf->getDetails();
+        $number_page =intval($pdfDetails["Pages"]);
+
+        for ($i=0; $i < $number_page; $i++) { 
+            $text = $pdf->getPages()[$i]->getText();
+
+            if($i==0){
+                $chunck =explode("Transaction\n", $text);
+                $information_array = explode("\n",$chunck[0]);
+
+                $group_translist = explode("Orabank,", $chunck[1])[0];
+
+                $group_translist =explode("\n",$group_translist);
+
+                foreach ($group_translist as $key => $value) {
+                    if($value == ""){
+                        unset($group_translist[$key]);
+                    }                    
+                } 
+
+                array_push($untreated_rows,$group_translist);
+
+            }else{
+
+                if( $i == ($number_page - 1)){
+
+                    $chunck =explode("Transaction\n",$text);
+                    $group_translist= explode("ID. TPE",$chunck[1])[0];
+
+                    // $group_translist = str_replace('\\',"",$group_translist);
+                    
+                   array_push($untreated_rows,$group_translist);
+
+                }else{
+                    $chunck =explode("Transaction\t\n",$text);
+                    $group_translist= explode("Orabank,",$chunck[2])[0];
+                    
+                    $group_translist =explode("\n",$group_translist);
+    
+                    foreach ($group_translist as $key => $value) {
+                        if($value == ""){
+                            unset($group_translist[$key]);
+                        }                    
+                    } 
+                    array_push($untreated_rows,$group_translist);
+
+                    
+                }
+
+            }
+            
+        }
+        
+        return $this->json($untreated_rows);
+
         $text = $pdf->getText();
+
+        // return $this->json($pdf );
+        // $pdf = $parser->parseFile('documents/TRANSACTIONS-TPE-02-12-2022-APAYM-TPE-MID-2020000330.pdf');
+        $text = $this->json([
+            $pdfDetails,
+            $text
+        ]);
+
+        return $this->json($text);
 
         $x = str_replace("\nTransaction\n", "[TRANSACTION]", $text);
         $separed_part = explode("[TRANSACTION]", $x); 
